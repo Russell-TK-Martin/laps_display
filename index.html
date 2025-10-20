@@ -34,6 +34,18 @@
 
   <script>
     const FEED = "https://teamsport.app.n8n.cloud/webhook/laps.json";
+    let currentValue = 0; // keep track of the last displayed number
+
+    function animateNumber(from, to, duration, element) {
+      const start = performance.now();
+      function update(timestamp) {
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const value = Math.floor(from + (to - from) * progress);
+        element.textContent = new Intl.NumberFormat("en-GB").format(value);
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
 
     async function load() {
       try {
@@ -43,9 +55,12 @@
         const updEl = document.getElementById("updated");
 
         if (data?.laps != null) {
-          // Optional: format with thousands separators
-          const formatted = new Intl.NumberFormat("en-GB").format(Number(data.laps));
-          lapsEl.textContent = formatted;
+          const newValue = Number(data.laps);
+
+          // Animate from currentValue → newValue over 1 second
+          animateNumber(currentValue, newValue, 1000, lapsEl);
+          currentValue = newValue;
+
           updEl.textContent = `Last updated: ${data.lastUpdated ?? "—"}`;
         } else {
           lapsEl.textContent = "—";
@@ -56,7 +71,7 @@
       }
     }
 
-    // Load now, then poll every 5 minutes (matches BMI export)
+    // Load now, then refresh every 5 minutes
     load();
     setInterval(load, 300000);
   </script>
